@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1024" height="500"></canvas>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const W = 1024, H = 500;
+
+// ── 배경 그라데이션 ──────────────────────────────────────────
+const bg = ctx.createLinearGradient(0, 0, 0, H);
+bg.addColorStop(0, '#2E1A0E');
+bg.addColorStop(1, '#1A0C06');
+ctx.fillStyle = bg;
+ctx.fillRect(0, 0, W, H);
+
+// 중앙 글로우 (왼쪽)
+const glow = ctx.createRadialGradient(240, 250, 20, 240, 250, 320);
+glow.addColorStop(0, 'rgba(176,120,80,0.25)');
+glow.addColorStop(1, 'rgba(0,0,0,0)');
+ctx.fillStyle = glow;
+ctx.fillRect(0, 0, W, H);
+
+// ── 카메라 아이콘 원 배경 ────────────────────────────────────
+ctx.save();
+ctx.beginPath();
+ctx.arc(210, 250, 155, 0, Math.PI * 2);
+ctx.fillStyle = 'rgba(176,120,80,0.18)';
+ctx.fill();
+ctx.beginPath();
+ctx.arc(210, 250, 140, 0, Math.PI * 2);
+ctx.fillStyle = '#B07850';
+ctx.fill();
+ctx.restore();
+
+// ── 카메라 바디 ──────────────────────────────────────────────
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// 카메라 뷰파인더 돌출부
+ctx.fillStyle = '#FFFFFF';
+roundRect(184, 182, 52, 22, 8);
+ctx.fill();
+
+// 카메라 바디
+ctx.fillStyle = '#FFFFFF';
+roundRect(110, 198, 200, 120, 18);
+ctx.fill();
+
+// 플래시
+ctx.fillStyle = '#FFE696';
+roundRect(268, 212, 28, 16, 5);
+ctx.fill();
+
+// ── 렌즈 ────────────────────────────────────────────────────
+const lx = 210, ly = 262;
+// 렌즈 외부 링
+ctx.beginPath(); ctx.arc(lx, ly, 46, 0, Math.PI*2);
+ctx.fillStyle = '#C8A070'; ctx.fill();
+ctx.beginPath(); ctx.arc(lx, ly, 40, 0, Math.PI*2);
+ctx.fillStyle = '#EAD9C0'; ctx.fill();
+ctx.beginPath(); ctx.arc(lx, ly, 34, 0, Math.PI*2);
+ctx.fillStyle = '#1E1008'; ctx.fill();
+ctx.beginPath(); ctx.arc(lx, ly, 24, 0, Math.PI*2);
+ctx.fillStyle = '#2E1A0A'; ctx.fill();
+ctx.beginPath(); ctx.arc(lx, ly, 14, 0, Math.PI*2);
+ctx.fillStyle = '#3C2410'; ctx.fill();
+// 하이라이트
+ctx.beginPath(); ctx.arc(lx - 11, ly - 11, 7, 0, Math.PI*2);
+ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill();
+ctx.beginPath(); ctx.arc(lx - 8, ly - 8, 3, 0, Math.PI*2);
+ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fill();
+
+// ── 세로 구분선 ──────────────────────────────────────────────
+const sep = ctx.createLinearGradient(390, 80, 390, H - 80);
+sep.addColorStop(0, 'rgba(176,120,80,0)');
+sep.addColorStop(0.2, 'rgba(176,120,80,0.7)');
+sep.addColorStop(0.8, 'rgba(176,120,80,0.7)');
+sep.addColorStop(1, 'rgba(176,120,80,0)');
+ctx.strokeStyle = sep;
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+ctx.moveTo(390, 80);
+ctx.lineTo(390, H - 80);
+ctx.stroke();
+
+// ── 텍스트 영역 ──────────────────────────────────────────────
+const tx = 425;
+
+// 앱 이름
+ctx.fillStyle = '#FFF0E0';
+ctx.font = 'bold 58px "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
+ctx.fillText('하루 한 장', tx, 178);
+
+// 강조 라인
+const accentLine = ctx.createLinearGradient(tx, 0, tx + 340, 0);
+accentLine.addColorStop(0, '#B07850');
+accentLine.addColorStop(1, 'rgba(176,120,80,0)');
+ctx.fillStyle = accentLine;
+ctx.fillRect(tx, 192, 340, 3);
+
+// 부제
+ctx.fillStyle = '#D4A574';
+ctx.font = '600 24px "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
+ctx.fillText('평생소장 사진 일기', tx, 234);
+
+// 설명
+ctx.fillStyle = '#8A6040';
+ctx.font = '400 17px "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
+ctx.fillText('구독 없이 · 광고 없이(유료) · 서버 없이', tx, 272);
+ctx.fillText('한 번 사면 평생, 모든 데이터는 내 폰에만', tx, 298);
+
+// ── 하단 기능 뱃지 ───────────────────────────────────────────
+const features = [
+  { icon: '📷', label: '하루 한 장' },
+  { icon: '✨', label: '이날의 기억' },
+  { icon: '🗺️', label: '지도 보기' },
+  { icon: '🔒', label: '생체 잠금' },
+];
+
+features.forEach((f, i) => {
+  const bx = tx + i * 138;
+  const by = 345;
+
+  // 뱃지 배경
+  roundRect(bx, by, 120, 80, 12);
+  ctx.fillStyle = 'rgba(176,120,80,0.15)';
+  ctx.fill();
+  roundRect(bx, by, 120, 80, 12);
+  ctx.strokeStyle = 'rgba(176,120,80,0.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // 아이콘
+  ctx.font = '26px serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(f.icon, bx + 60, by + 36);
+
+  // 라벨
+  ctx.font = '500 13px "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
+  ctx.fillStyle = '#C89060';
+  ctx.fillText(f.label, bx + 60, by + 60);
+  ctx.textAlign = 'left';
+});
+
+// ── 가격 배지 ────────────────────────────────────────────────
+roundRect(tx, 455, 200, 34, 17);
+ctx.fillStyle = '#B07850';
+ctx.fill();
+ctx.fillStyle = '#FFF0E0';
+ctx.font = 'bold 15px "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
+ctx.textAlign = 'center';
+ctx.fillText('평생 이용권 ₩7,000', tx + 100, 477);
+ctx.textAlign = 'left';
+
+// ── 완료 메시지 ──────────────────────────────────────────────
+console.log('DONE');
+</script>
+</body>
+</html>

@@ -1,179 +1,143 @@
-/// Generates Play Store feature graphic (1024×500 PNG)
-/// Run: dart tool/gen_feature_graphic.dart
+// dart run tool/gen_feature_graphic.dart
+// Play Store 피처 그래픽 1024×500 PNG 생성
+
 import 'dart:io';
 import 'dart:math';
 import 'package:image/image.dart';
 
-void main() async {
+void main() {
   const w = 1024;
   const h = 500;
 
   final img = Image(width: w, height: h);
 
-  // ─── Background gradient (warm dark brown → darker) ───────────────────────
+  // ── 배경: 짙은 warm-brown 그라데이션 ──────────────────────────
   for (var y = 0; y < h; y++) {
-    final t = y / h;
-    final r = _lerp(0x2C, 0x1A, t);
-    final g = _lerp(0x1A, 0x0E, t);
-    final b = _lerp(0x10, 0x08, t);
     for (var x = 0; x < w; x++) {
-      img.setPixelRgb(x, y, r.round(), g.round(), b.round());
+      // 세로 그라데이션 (위 밝게 → 아래 어둡게)
+      final t = y / h;
+      final r = _lerp(50, 28, t).round();
+      final g = _lerp(30, 16, t).round();
+      final b = _lerp(18, 10, t).round();
+      // 가로 중앙 글로우
+      final dx = (x - w * 0.38) / (w * 0.5);
+      final dy = (y - h * 0.5) / (h * 0.6);
+      final glow = max(0.0, 1.0 - sqrt(dx * dx + dy * dy)) * 22;
+      img.setPixelRgb(x, y,
+          (r + glow).round().clamp(0, 255),
+          (g + glow * 0.5).round().clamp(0, 255),
+          b.clamp(0, 255));
     }
   }
 
-  // ─── Subtle warm vignette glow (center) ───────────────────────────────────
-  for (var y = 0; y < h; y++) {
-    for (var x = 0; x < w; x++) {
-      final dx = (x - w / 2) / (w / 2);
-      final dy = (y - h / 2) / (h / 2);
-      final dist = sqrt(dx * dx + dy * dy);
-      final glow = max(0.0, 1.0 - dist * 1.2);
-      final p = img.getPixel(x, y);
-      final nr = min(255, p.r.toInt() + (glow * 30).round());
-      final ng = min(255, p.g.toInt() + (glow * 15).round());
-      img.setPixelRgb(x, y, nr, ng, p.b.toInt());
-    }
+  // ── 왼쪽: 앱 아이콘 (카메라) ─────────────────────────────────
+  const icX = 200; // 아이콘 중심 X
+  const icY = 240; // 아이콘 중심 Y
+  const icS = 150; // 아이콘 반크기
+
+  // 아이콘 배경 원 (따뜻한 갈색)
+  fillCircle(img, x: icX, y: icY, radius: icS + 10,
+      color: ColorRgba8(176, 120, 80, 60));
+  fillCircle(img, x: icX, y: icY, radius: icS,
+      color: ColorRgb8(176, 120, 80));
+
+  // 카메라 바디 (흰색 둥근 사각형, 아이콘 내부)
+  _fillRoundRect(img,
+      icX - 95, icY - 52,
+      icX + 95, icY + 65,
+      16, ColorRgb8(255, 255, 255));
+
+  // 뷰파인더 돌출부
+  _fillRoundRect(img,
+      icX - 26, icY - 68,
+      icX + 26, icY - 46,
+      8, ColorRgb8(255, 255, 255));
+
+  // 렌즈 링
+  fillCircle(img, x: icX, y: icY + 8, radius: 40,
+      color: ColorRgb8(200, 160, 110));
+  fillCircle(img, x: icX, y: icY + 8, radius: 35,
+      color: ColorRgb8(245, 235, 220));
+  fillCircle(img, x: icX, y: icY + 8, radius: 30,
+      color: ColorRgb8(40, 28, 16));
+  fillCircle(img, x: icX, y: icY + 8, radius: 22,
+      color: ColorRgb8(60, 42, 22));
+  fillCircle(img, x: icX, y: icY + 8, radius: 13,
+      color: ColorRgb8(80, 58, 30));
+  // 하이라이트
+  fillCircle(img, x: icX - 10, y: icY - 2, radius: 6,
+      color: ColorRgba8(255, 255, 255, 160));
+
+  // 플래시 점
+  _fillRoundRect(img,
+      icX + 55, icY - 42,
+      icX + 80, icY - 28,
+      5, ColorRgb8(255, 230, 160));
+
+  // ── 구분선 (세로) ─────────────────────────────────────────────
+  for (var y = 80; y < h - 80; y++) {
+    img.setPixelRgb(380, y, 176, 120, 80);
+    img.setPixelRgb(381, y, 100, 68, 44);
   }
 
-  // ─── Camera icon (centered left-ish) ──────────────────────────────────────
-  const cx = 280;
-  const cy = 240;
-  const camW = 160;
-  const camH = 110;
-  const camR = 14; // corner radius
-  const gold = 0xFFB07850; // warm gold/brown
-  const white = 0xFFFFFFFF;
+  // ── 오른쪽: 텍스트 영역 (막대로 표현) ───────────────────────
+  // 제목 "하루 한 장" — 큰 밝은 바
+  _drawTextBar(img, 420, 130, 380, 52, ColorRgb8(255, 238, 210), 10);
 
-  // Camera body
-  _fillRoundRect(img, cx - camW ~/ 2, cy - camH ~/ 2, camW, camH, camR,
-      0xFFB07850);
+  // 부제 "평생소장 사진 일기" — 중간 금색 바
+  _drawTextBar(img, 420, 202, 280, 8, ColorRgb8(176, 120, 80), 4);
 
-  // Viewfinder bump
-  _fillRoundRect(
-      img, cx - 22, cy - camH ~/ 2 - 16, 44, 18, 5, 0xFFB07850);
+  // 설명 텍스트 줄 (3줄)
+  _drawTextBar(img, 420, 258, 300, 7, ColorRgb8(130, 90, 60), 3);
+  _drawTextBar(img, 420, 274, 260, 7, ColorRgb8(130, 90, 60), 3);
+  _drawTextBar(img, 420, 290, 220, 7, ColorRgb8(130, 90, 60), 3);
 
-  // Lens outer ring
-  _fillCircle(img, cx, cy + 6, 40, 0xFF7A5230);
-  // Lens middle ring
-  _fillCircle(img, cx, cy + 6, 30, 0xFFD4A574);
-  // Lens inner
-  _fillCircle(img, cx, cy + 6, 18, 0xFF2C1A10);
-  // Lens glint
-  _fillCircle(img, cx - 8, cy + 6 - 8, 5, 0x99FFFFFF);
-
-  // ─── Right side: App name + tagline ───────────────────────────────────────
-  // Draw "하루 한 장" as big text using pixel blocks (simple bitmapped text)
-  _drawKoreanTitle(img, 440, 180);
-  _drawTagline(img, 440, 290);
-
-  // ─── Bottom-right: small badge icons ─────────────────────────────────────
-  const badges = ['📷', '📅', '✨', '🔒'];
-  // (rendered as colored dots since dart:image has no font for emoji)
-  final dotColors = [0xFFB07850, 0xFFD4A574, 0xFFE8C49A, 0xFF7A5230];
+  // ── 하단 배지 바 ─────────────────────────────────────────────
+  // 배지 아이콘 (작은 원 4개)
+  final badgeColors = [
+    ColorRgb8(176, 120, 80),
+    ColorRgb8(212, 165, 116),
+    ColorRgb8(232, 196, 154),
+    ColorRgb8(122, 82, 48),
+  ];
+  final badgeLabels = [14, 12, 12, 12]; // 바 너비
   for (var i = 0; i < 4; i++) {
-    _fillCircle(img, 440 + i * 56, 390, 14, dotColors[i]);
+    final bx = 420 + i * 100;
+    fillCircle(img, x: bx, y: 380, radius: 20, color: badgeColors[i]);
+    // 작은 텍스트 바
+    _fillRoundRect(img, bx - 30, 408, bx + 30, 416, 3,
+        ColorRgb8(100, 68, 44));
   }
 
-  // ─── Fine horizontal divider line ─────────────────────────────────────────
-  for (var x = 420; x < w - 40; x++) {
-    img.setPixelRgb(x, 340, 0xB0, 0x78, 0x50);
-  }
+  // ── 우하단 "7,000원" 가격 배지 ───────────────────────────────
+  _fillRoundRect(img, 820, 350, 990, 420, 16,
+      ColorRgb8(176, 120, 80));
+  _drawTextBar(img, 838, 365, 80, 14, ColorRgb8(255, 238, 210), 5);
+  _drawTextBar(img, 838, 388, 100, 9, ColorRgb8(255, 220, 170), 4);
 
-  // ─── Save ─────────────────────────────────────────────────────────────────
+  // ── 저장 ─────────────────────────────────────────────────────
   final outDir = Directory('docs');
   if (!outDir.existsSync()) outDir.createSync(recursive: true);
-
   final bytes = encodePng(img);
   File('docs/feature_graphic.png').writeAsBytesSync(bytes);
-  print('✅  docs/feature_graphic.png (${bytes.length ~/ 1024} KB)');
+  print('✓ docs/feature_graphic.png (${(bytes.length / 1024).round()} KB) 생성 완료');
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ── 유틸 ──────────────────────────────────────────────────────────────────────
 
 double _lerp(num a, num b, double t) => a + (b - a) * t;
 
-void _fillCircle(Image img, int cx, int cy, int r, int argb) {
-  final a = (argb >> 24) & 0xFF;
-  final red = (argb >> 16) & 0xFF;
-  final g = (argb >> 8) & 0xFF;
-  final b = argb & 0xFF;
-  for (var y = cy - r; y <= cy + r; y++) {
-    for (var x = cx - r; x <= cx + r; x++) {
-      if (x < 0 || y < 0 || x >= img.width || y >= img.height) continue;
-      final dx = x - cx;
-      final dy = y - cy;
-      if (dx * dx + dy * dy <= r * r) {
-        if (a == 255) {
-          img.setPixelRgb(x, y, red, g, b);
-        } else {
-          final p = img.getPixel(x, y);
-          final af = a / 255;
-          final nr = (p.r * (1 - af) + red * af).round();
-          final ng = (p.g * (1 - af) + g * af).round();
-          final nb = (p.b * (1 - af) + b * af).round();
-          img.setPixelRgb(x, y, nr, ng, nb);
-        }
-      }
-    }
-  }
+void _fillRoundRect(Image img, int x1, int y1, int x2, int y2, int r, Color c) {
+  fillRect(img, x1: x1 + r, y1: y1, x2: x2 - r, y2: y2, color: c);
+  fillRect(img, x1: x1, y1: y1 + r, x2: x2, y2: y2 - r, color: c);
+  fillCircle(img, x: x1 + r, y: y1 + r, radius: r, color: c);
+  fillCircle(img, x: x2 - r, y: y1 + r, radius: r, color: c);
+  fillCircle(img, x: x1 + r, y: y2 - r, radius: r, color: c);
+  fillCircle(img, x: x2 - r, y: y2 - r, radius: r, color: c);
 }
 
-void _fillRoundRect(
-    Image img, int x, int y, int w, int h, int r, int argb) {
-  final red = (argb >> 16) & 0xFF;
-  final g = (argb >> 8) & 0xFF;
-  final b = argb & 0xFF;
-  for (var py = y; py < y + h; py++) {
-    for (var px = x; px < x + w; px++) {
-      if (px < 0 || py < 0 || px >= img.width || py >= img.height) continue;
-      if (_inRoundRect(px - x, py - y, w, h, r)) {
-        img.setPixelRgb(px, py, red, g, b);
-      }
-    }
-  }
-}
-
-bool _inRoundRect(int x, int y, int w, int h, int r) {
-  if (x < r && y < r) return (x - r) * (x - r) + (y - r) * (y - r) <= r * r;
-  if (x > w - r && y < r)
-    return (x - (w - r)) * (x - (w - r)) + (y - r) * (y - r) <= r * r;
-  if (x < r && y > h - r)
-    return (x - r) * (x - r) + (y - (h - r)) * (y - (h - r)) <= r * r;
-  if (x > w - r && y > h - r)
-    return (x - (w - r)) * (x - (w - r)) +
-            (y - (h - r)) * (y - (h - r)) <=
-        r * r;
-  return true;
-}
-
-/// Draw "하루 한 장" using thick strokes (2px dots in a grid)
-void _drawKoreanTitle(Image img, int left, int top) {
-  // Since dart:image has no TTF renderer, we approximate with a bold bar
-  const barH = 10;
-  const barSpacing = 6;
-  final labels = ['하루 한 장'];
-  for (var i = 0; i < 3; i++) {
-    final y = top + i * (barH + barSpacing);
-    final barW = [160, 120, 100][i];
-    for (var py = y; py < y + barH; py++) {
-      for (var px = left; px < left + barW; px++) {
-        if (px >= img.width || py >= img.height) continue;
-        img.setPixelRgb(px, py, 0xFF, 0xF5, 0xE6);
-      }
-    }
-  }
-  // Main title bar (larger)
-  _fillRoundRect(img, left, top, 260, 56, 8, 0xFFFFEEDD);
-  _fillRoundRect(img, left + 8, top + 8, 244, 40, 6, 0xFF2C1A10);
-  // Accent line
-  _fillRoundRect(img, left, top + 64, 200, 5, 2, 0xFFB07850);
-}
-
-void _drawTagline(Image img, int left, int top) {
-  // Tagline placeholder bars
-  const lines = [200, 160, 140];
-  for (var i = 0; i < lines.length; i++) {
-    final y = top + i * 22;
-    _fillRoundRect(img, left, y, lines[i], 7, 3, 0xFF7A5230);
-  }
+/// 텍스트를 둥근 막대(pill)로 표현
+void _drawTextBar(Image img, int x, int y, int w, int h, Color c, int r) {
+  if (r > h ~/ 2) r = h ~/ 2;
+  _fillRoundRect(img, x, y, x + w, y + h, r, c);
 }
