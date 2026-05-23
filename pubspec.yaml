@@ -1,0 +1,46 @@
+name: daily_one_shot
+description: "하루 한 장 — 평생소장 사진 일기"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Data layer
+  drift: ^2.20.2
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # Media & device
+  image_picker: ^1.1.2
+  image: ^4.2.0
+  local_auth: ^2.3.0
+
+  # Backup
+  archive: ^3.6.1
+
+  # Widgets
+  home_widget: ^0.7.0
+
+  # IAP
+  in_app_purchase: ^3.2.0
+
+  # Utils
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  drift_dev: ^2.20.2
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
