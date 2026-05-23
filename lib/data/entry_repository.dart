@@ -23,6 +23,9 @@ class EntryRepository {
     required DateTime day,
     required String photoPath,
     required String memo,
+    String? weather,
+    double? latitude,
+    double? longitude,
   }) async {
     final key = dayKey(day);
     final now = DateTime.now().toUtc();
@@ -33,6 +36,9 @@ class EntryRepository {
           date: key,
           photoPath: photoPath,
           memo: memo,
+          weather: Value(weather),
+          latitude: Value(latitude),
+          longitude: Value(longitude),
           createdAt: now,
           updatedAt: now,
         ),
@@ -42,6 +48,9 @@ class EntryRepository {
         .write(EntriesCompanion(
       photoPath: Value(photoPath),
       memo: Value(memo),
+      weather: Value(weather ?? existing.weather),
+      latitude: Value(latitude ?? existing.latitude),
+      longitude: Value(longitude ?? existing.longitude),
       updatedAt: Value(now),
     ));
     return existing.id;
@@ -108,6 +117,38 @@ class EntryRepository {
           e.date.day == key.day &&
           e.date.year < key.year;
     }).toList();
+  }
+
+  // ── 통계 ─────────────────────────────────────────────────────────────────
+
+  Future<int> totalCount() async => (await listAll()).length;
+
+  /// 오늘(또는 어제)을 포함한 연속 기록 일수.
+  Future<int> currentStreak() async {
+    final entries = await listAll(); // 내림차순 정렬
+    if (entries.isEmpty) return 0;
+    final today = dayKey(DateTime.now());
+    final yesterday = today.subtract(const Duration(days: 1));
+    // 오늘 기록 있으면 오늘부터, 없으면 어제부터 카운트
+    DateTime cursor =
+        entries.first.date == today ? today : yesterday;
+    int streak = 0;
+    for (final e in entries) {
+      if (e.date == cursor) {
+        streak++;
+        cursor = cursor.subtract(const Duration(days: 1));
+      } else if (e.date.isBefore(cursor)) {
+        break; // 연속 끊김
+      }
+    }
+    return streak;
+  }
+
+  /// 올해 기록한 날 수.
+  Future<int> countThisYear() async {
+    final year = DateTime.now().year;
+    final entries = await listAll();
+    return entries.where((e) => e.date.year == year).length;
   }
 
   String _toFtsQuery(String input) {

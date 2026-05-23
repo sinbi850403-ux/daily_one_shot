@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- app documents directory (ZIP 백업 파일) -->
+    <files-path name="documents" path="." />
+    <!-- cache directory (임시 import 파일) -->
+    <cache-path name="cache" path="." />
+    <!-- external files (사진 공유) -->
+    <external-files-path name="external" path="." />
+</paths>

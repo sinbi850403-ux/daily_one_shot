@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:archive/archive_io.dart';
+import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
 import 'database.dart';
@@ -11,8 +11,8 @@ import 'photo_storage.dart';
 
 /// ZIP export/import for "carry your data forever" guarantee.
 /// Format:
-///   manifest.json   — { version, exportedAt, entries: [{date, memo, photo, createdAt, updatedAt}] }
-///   photos/<file>   — original photos referenced by manifest
+///   manifest.json   — { version, exportedAt, entries: [...] }
+///   photos/file     — original photos referenced by manifest
 class BackupService {
   BackupService({
     required AppDatabase db,
@@ -27,36 +27,41 @@ class BackupService {
   static const int formatVersion = 1;
 
   Future<File> exportToZip(File targetFile) async {
-    final encoder = ZipFileEncoder()..create(targetFile.path);
-    try {
-      final entries = await _repo.listAll();
-      final manifest = {
-        'version': formatVersion,
-        'exportedAt': DateTime.now().toUtc().toIso8601String(),
-        'entries': [
-          for (final e in entries)
-            {
-              'date': e.date.toIso8601String(),
-              'memo': e.memo,
-              'photo': p.basename(e.photoPath),
-              'createdAt': e.createdAt.toIso8601String(),
-              'updatedAt': e.updatedAt.toIso8601String(),
-            }
-        ],
-      };
-      encoder.addArchiveFile(ArchiveFile.string(
-        'manifest.json',
-        const JsonEncoder.withIndent('  ').convert(manifest),
-      ));
-      for (final e in entries) {
-        final src = await _storage.originalFile(e.photoPath);
-        if (await src.exists()) {
-          await encoder.addFile(src, 'photos/${p.basename(e.photoPath)}');
-        }
+    final archive = Archive();
+
+    final entries = await _repo.listAll();
+    final manifest = {
+      'version': formatVersion,
+      'exportedAt': DateTime.now().toUtc().toIso8601String(),
+      'entries': [
+        for (final e in entries)
+          {
+            'date': e.date.toIso8601String(),
+            'memo': e.memo,
+            'photo': p.basename(e.photoPath),
+            'createdAt': e.createdAt.toIso8601String(),
+            'updatedAt': e.updatedAt.toIso8601String(),
+          }
+      ],
+    };
+    final manifestBytes =
+        utf8.encode(const JsonEncoder.withIndent('  ').convert(manifest));
+    archive.addFile(ArchiveFile('manifest.json', manifestBytes.length, manifestBytes));
+
+    for (final e in entries) {
+      final src = await _storage.originalFile(e.photoPath);
+      if (await src.exists()) {
+        final bytes = await src.readAsBytes();
+        archive.addFile(ArchiveFile(
+          'photos/${p.basename(e.photoPath)}',
+          bytes.length,
+          bytes,
+        ));
       }
-    } finally {
-      await encoder.close();
     }
+
+    final zipBytes = ZipEncoder().encode(archive) ?? <int>[];
+    await targetFile.writeAsBytes(zipBytes);
     return targetFile;
   }
 
@@ -89,8 +94,7 @@ class BackupService {
         if (existing != null) continue;
       }
 
-      final photoBytes =
-          Uint8List.fromList(photoEntry.content as List<int>);
+      final photoBytes = Uint8List.fromList(photoEntry.content as List<int>);
       final saved = await _storage.saveForDay(date, photoBytes);
       await _repo.upsert(day: date, photoPath: saved, memo: memo);
       imported += 1;

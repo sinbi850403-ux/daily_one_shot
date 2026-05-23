@@ -55,6 +55,39 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _weatherMeta = const VerificationMeta(
+    'weather',
+  );
+  @override
+  late final GeneratedColumn<String> weather = GeneratedColumn<String>(
+    'weather',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _latitudeMeta = const VerificationMeta(
+    'latitude',
+  );
+  @override
+  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
+    'latitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _longitudeMeta = const VerificationMeta(
+    'longitude',
+  );
+  @override
+  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
+    'longitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -83,6 +116,9 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     date,
     photoPath,
     memo,
+    weather,
+    latitude,
+    longitude,
     createdAt,
     updatedAt,
   ];
@@ -125,6 +161,24 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     } else if (isInserting) {
       context.missing(_memoMeta);
     }
+    if (data.containsKey('weather')) {
+      context.handle(
+        _weatherMeta,
+        weather.isAcceptableOrUnknown(data['weather']!, _weatherMeta),
+      );
+    }
+    if (data.containsKey('latitude')) {
+      context.handle(
+        _latitudeMeta,
+        latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta),
+      );
+    }
+    if (data.containsKey('longitude')) {
+      context.handle(
+        _longitudeMeta,
+        longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -166,6 +220,18 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
         DriftSqlType.string,
         data['${effectivePrefix}memo'],
       )!,
+      weather: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}weather'],
+      ),
+      latitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}latitude'],
+      ),
+      longitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}longitude'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -188,6 +254,9 @@ class Entry extends DataClass implements Insertable<Entry> {
   final DateTime date;
   final String photoPath;
   final String memo;
+  final String? weather;
+  final double? latitude;
+  final double? longitude;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Entry({
@@ -195,6 +264,9 @@ class Entry extends DataClass implements Insertable<Entry> {
     required this.date,
     required this.photoPath,
     required this.memo,
+    this.weather,
+    this.latitude,
+    this.longitude,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -205,6 +277,15 @@ class Entry extends DataClass implements Insertable<Entry> {
     map['date'] = Variable<DateTime>(date);
     map['photo_path'] = Variable<String>(photoPath);
     map['memo'] = Variable<String>(memo);
+    if (!nullToAbsent || weather != null) {
+      map['weather'] = Variable<String>(weather);
+    }
+    if (!nullToAbsent || latitude != null) {
+      map['latitude'] = Variable<double>(latitude);
+    }
+    if (!nullToAbsent || longitude != null) {
+      map['longitude'] = Variable<double>(longitude);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -216,6 +297,15 @@ class Entry extends DataClass implements Insertable<Entry> {
       date: Value(date),
       photoPath: Value(photoPath),
       memo: Value(memo),
+      weather: weather == null && nullToAbsent
+          ? const Value.absent()
+          : Value(weather),
+      latitude: latitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(latitude),
+      longitude: longitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(longitude),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -231,6 +321,9 @@ class Entry extends DataClass implements Insertable<Entry> {
       date: serializer.fromJson<DateTime>(json['date']),
       photoPath: serializer.fromJson<String>(json['photoPath']),
       memo: serializer.fromJson<String>(json['memo']),
+      weather: serializer.fromJson<String?>(json['weather']),
+      latitude: serializer.fromJson<double?>(json['latitude']),
+      longitude: serializer.fromJson<double?>(json['longitude']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -243,6 +336,9 @@ class Entry extends DataClass implements Insertable<Entry> {
       'date': serializer.toJson<DateTime>(date),
       'photoPath': serializer.toJson<String>(photoPath),
       'memo': serializer.toJson<String>(memo),
+      'weather': serializer.toJson<String?>(weather),
+      'latitude': serializer.toJson<double?>(latitude),
+      'longitude': serializer.toJson<double?>(longitude),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -253,6 +349,9 @@ class Entry extends DataClass implements Insertable<Entry> {
     DateTime? date,
     String? photoPath,
     String? memo,
+    Value<String?> weather = const Value.absent(),
+    Value<double?> latitude = const Value.absent(),
+    Value<double?> longitude = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Entry(
@@ -260,6 +359,9 @@ class Entry extends DataClass implements Insertable<Entry> {
     date: date ?? this.date,
     photoPath: photoPath ?? this.photoPath,
     memo: memo ?? this.memo,
+    weather: weather.present ? weather.value : this.weather,
+    latitude: latitude.present ? latitude.value : this.latitude,
+    longitude: longitude.present ? longitude.value : this.longitude,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -269,6 +371,9 @@ class Entry extends DataClass implements Insertable<Entry> {
       date: data.date.present ? data.date.value : this.date,
       photoPath: data.photoPath.present ? data.photoPath.value : this.photoPath,
       memo: data.memo.present ? data.memo.value : this.memo,
+      weather: data.weather.present ? data.weather.value : this.weather,
+      latitude: data.latitude.present ? data.latitude.value : this.latitude,
+      longitude: data.longitude.present ? data.longitude.value : this.longitude,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -281,6 +386,9 @@ class Entry extends DataClass implements Insertable<Entry> {
           ..write('date: $date, ')
           ..write('photoPath: $photoPath, ')
           ..write('memo: $memo, ')
+          ..write('weather: $weather, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -288,8 +396,17 @@ class Entry extends DataClass implements Insertable<Entry> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, date, photoPath, memo, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    date,
+    photoPath,
+    memo,
+    weather,
+    latitude,
+    longitude,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -298,6 +415,9 @@ class Entry extends DataClass implements Insertable<Entry> {
           other.date == this.date &&
           other.photoPath == this.photoPath &&
           other.memo == this.memo &&
+          other.weather == this.weather &&
+          other.latitude == this.latitude &&
+          other.longitude == this.longitude &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -307,6 +427,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   final Value<DateTime> date;
   final Value<String> photoPath;
   final Value<String> memo;
+  final Value<String?> weather;
+  final Value<double?> latitude;
+  final Value<double?> longitude;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   const EntriesCompanion({
@@ -314,6 +437,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     this.date = const Value.absent(),
     this.photoPath = const Value.absent(),
     this.memo = const Value.absent(),
+    this.weather = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -322,6 +448,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     required DateTime date,
     required String photoPath,
     required String memo,
+    this.weather = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
   }) : date = Value(date),
@@ -334,6 +463,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     Expression<DateTime>? date,
     Expression<String>? photoPath,
     Expression<String>? memo,
+    Expression<String>? weather,
+    Expression<double>? latitude,
+    Expression<double>? longitude,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -342,6 +474,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
       if (date != null) 'date': date,
       if (photoPath != null) 'photo_path': photoPath,
       if (memo != null) 'memo': memo,
+      if (weather != null) 'weather': weather,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -352,6 +487,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     Value<DateTime>? date,
     Value<String>? photoPath,
     Value<String>? memo,
+    Value<String?>? weather,
+    Value<double?>? latitude,
+    Value<double?>? longitude,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
   }) {
@@ -360,6 +498,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
       date: date ?? this.date,
       photoPath: photoPath ?? this.photoPath,
       memo: memo ?? this.memo,
+      weather: weather ?? this.weather,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -380,6 +521,15 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     if (memo.present) {
       map['memo'] = Variable<String>(memo.value);
     }
+    if (weather.present) {
+      map['weather'] = Variable<String>(weather.value);
+    }
+    if (latitude.present) {
+      map['latitude'] = Variable<double>(latitude.value);
+    }
+    if (longitude.present) {
+      map['longitude'] = Variable<double>(longitude.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -396,6 +546,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
           ..write('date: $date, ')
           ..write('photoPath: $photoPath, ')
           ..write('memo: $memo, ')
+          ..write('weather: $weather, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -420,6 +573,9 @@ typedef $$EntriesTableCreateCompanionBuilder =
       required DateTime date,
       required String photoPath,
       required String memo,
+      Value<String?> weather,
+      Value<double?> latitude,
+      Value<double?> longitude,
       required DateTime createdAt,
       required DateTime updatedAt,
     });
@@ -429,6 +585,9 @@ typedef $$EntriesTableUpdateCompanionBuilder =
       Value<DateTime> date,
       Value<String> photoPath,
       Value<String> memo,
+      Value<String?> weather,
+      Value<double?> latitude,
+      Value<double?> longitude,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
     });
@@ -459,6 +618,21 @@ class $$EntriesTableFilterComposer
 
   ColumnFilters<String> get memo => $composableBuilder(
     column: $table.memo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get weather => $composableBuilder(
+    column: $table.weather,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get longitude => $composableBuilder(
+    column: $table.longitude,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -502,6 +676,21 @@ class $$EntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get weather => $composableBuilder(
+    column: $table.weather,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get longitude => $composableBuilder(
+    column: $table.longitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -533,6 +722,15 @@ class $$EntriesTableAnnotationComposer
 
   GeneratedColumn<String> get memo =>
       $composableBuilder(column: $table.memo, builder: (column) => column);
+
+  GeneratedColumn<String> get weather =>
+      $composableBuilder(column: $table.weather, builder: (column) => column);
+
+  GeneratedColumn<double> get latitude =>
+      $composableBuilder(column: $table.latitude, builder: (column) => column);
+
+  GeneratedColumn<double> get longitude =>
+      $composableBuilder(column: $table.longitude, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -573,6 +771,9 @@ class $$EntriesTableTableManager
                 Value<DateTime> date = const Value.absent(),
                 Value<String> photoPath = const Value.absent(),
                 Value<String> memo = const Value.absent(),
+                Value<String?> weather = const Value.absent(),
+                Value<double?> latitude = const Value.absent(),
+                Value<double?> longitude = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => EntriesCompanion(
@@ -580,6 +781,9 @@ class $$EntriesTableTableManager
                 date: date,
                 photoPath: photoPath,
                 memo: memo,
+                weather: weather,
+                latitude: latitude,
+                longitude: longitude,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -589,6 +793,9 @@ class $$EntriesTableTableManager
                 required DateTime date,
                 required String photoPath,
                 required String memo,
+                Value<String?> weather = const Value.absent(),
+                Value<double?> latitude = const Value.absent(),
+                Value<double?> longitude = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
               }) => EntriesCompanion.insert(
@@ -596,6 +803,9 @@ class $$EntriesTableTableManager
                 date: date,
                 photoPath: photoPath,
                 memo: memo,
+                weather: weather,
+                latitude: latitude,
+                longitude: longitude,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),

@@ -1,7 +1,9 @@
-/// Tracks whether biometric lock is enabled and whether the current session
-/// has been unlocked. Persisted via a tiny SharedPreferences-free approach:
-/// the value lives in the AppDatabase via a settings table — but to keep the
-/// data layer simple for MVP, we use an in-memory + file-backed flag.
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+
 class BiometricLock {
   BiometricLock._();
   static final BiometricLock instance = BiometricLock._();
@@ -12,15 +14,32 @@ class BiometricLock {
   bool get enabled => _enabled;
   bool get unlockedThisSession => _unlockedThisSession;
 
-  /// Call on app boot once SharedPreferences/SettingsRepo is wired.
-  /// MVP keeps it in memory; full persistence is post-MVP.
+  Future<File> _settingsFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File(p.join(dir.path, '.settings.json'));
+  }
+
   Future<void> load() async {
-    // TODO: persist via settings table; in MVP defaults to off.
+    try {
+      final file = await _settingsFile();
+      if (await file.exists()) {
+        final map =
+            jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+        _enabled = map['biometric_lock'] as bool? ?? false;
+      }
+    } catch (_) {
+      _enabled = false;
+    }
   }
 
   Future<void> setEnabled(bool v) async {
     _enabled = v;
     if (!v) _unlockedThisSession = false;
+    try {
+      final file = await _settingsFile();
+      await file.writeAsString(
+          jsonEncode({'biometric_lock': v}));
+    } catch (_) {}
   }
 
   void markUnlocked() {

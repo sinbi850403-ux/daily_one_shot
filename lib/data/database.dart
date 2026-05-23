@@ -13,6 +13,11 @@ class Entries extends Table {
   DateTimeColumn get date => dateTime().unique()();
   TextColumn get photoPath => text()();
   TextColumn get memo => text().withLength(min: 0, max: 200)();
+  // v2: weather string (e.g. "맑음 22°C"), nullable
+  TextColumn get weather => text().nullable()();
+  // v2: GPS coordinates, nullable
+  RealColumn get latitude => real().nullable()();
+  RealColumn get longitude => real().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 }
@@ -23,10 +28,17 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(entries, entries.weather);
+        await m.addColumn(entries, entries.latitude);
+        await m.addColumn(entries, entries.longitude);
+      }
+    },
     onCreate: (m) async {
       await m.createAll();
       await customStatement('''
